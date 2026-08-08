@@ -4,7 +4,7 @@ function App() {
   const [message, setMessage] = useState("Loading...");
 
   useEffect(() => {
-    fetch("http://13.233.26.252:5000/")
+    fetch("http://35.154.134.49:5000/")
       .then((res) => res.text())
       .then((data) => setMessage(data))
       .catch(() => setMessage("Backend not connected"));
