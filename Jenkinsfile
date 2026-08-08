@@ -6,11 +6,6 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                echo 'Checking out source code...'
-            }
-        }
 
         stage('Build Backend Image') {
             steps {
@@ -36,15 +31,55 @@ pipeline {
                 sh 'docker push aadu949/mern-client:latest'
             }
         }
+
+        stage('Deploy Backend') {
+            steps {
+                sh '''
+                    docker pull aadu949/mern-server:latest
+                    docker rm -f mern-server || true
+                    docker run -d \
+                      --name mern-server \
+                      --env-file /home/ubuntu/MERN-project/server/.env \
+                      --restart unless-stopped \
+                      -p 5000:5000 \
+                      aadu949/mern-server:latest
+                '''
+            }
+        }
+
+        stage('Deploy Frontend') {
+            steps {
+                sh '''
+                    docker pull aadu949/mern-client:latest
+                    docker rm -f mern-client || true
+                    docker run -d \
+                      --name mern-client \
+                      --restart unless-stopped \
+                      -p 80:80 \
+                      aadu949/mern-client:latest
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                    sleep 5
+                    docker ps
+                    curl -f http://localhost:5000
+                    curl -f http://localhost
+                '''
+            }
+        }
     }
 
     post {
         success {
-            echo 'MERN Docker images built and pushed successfully!'
+            echo 'MERN application built, pushed and deployed successfully!'
         }
 
         failure {
-            echo 'Pipeline failed. Check the console output.'
+            echo 'Deployment failed. Check the console output.'
         }
     }
 }
