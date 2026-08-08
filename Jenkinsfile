@@ -1,44 +1,50 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
+    }
+
     stages {
-
-        stage('Install Client Dependencies') {
+        stage('Checkout') {
             steps {
-                dir('client') {
-                    sh 'npm ci'
-                }
+                echo 'Checking out source code...'
             }
         }
 
-        stage('Lint Client') {
+        stage('Build Backend Image') {
             steps {
-                dir('client') {
-                    sh 'npm run lint'
-                }
+                sh 'docker build -t aadu949/mern-server:latest ./server'
             }
         }
 
-        stage('Build Client') {
+        stage('Build Frontend Image') {
             steps {
-                dir('client') {
-                    sh 'npm run build'
-                }
+                sh 'docker build -t aadu949/mern-client:latest ./client'
             }
         }
 
-        stage('Install Server Dependencies') {
+        stage('Docker Hub Login') {
             steps {
-                dir('server') {
-                    sh 'npm ci'
-                }
+                sh 'echo "$DOCKERHUB_CREDENTIALS_PSW" | docker login -u "$DOCKERHUB_CREDENTIALS_USR" --password-stdin'
             }
         }
 
-        stage('Docker Check') {
+        stage('Push Images') {
             steps {
-                sh 'docker --version'
+                sh 'docker push aadu949/mern-server:latest'
+                sh 'docker push aadu949/mern-client:latest'
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'MERN Docker images built and pushed successfully!'
+        }
+
+        failure {
+            echo 'Pipeline failed. Check the console output.'
         }
     }
 }
