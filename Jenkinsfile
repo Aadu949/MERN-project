@@ -19,7 +19,7 @@ pipeline {
                     withSonarQubeEnv('SonarQube') {
                         sh """
                             ${scannerHome}/bin/sonar-scanner \
-                              -Dsonar.projectKey=mern-project \
+                              -Dsonar.projectKey=MERN-project \
                               -Dsonar.projectName='MERN Project' \
                               -Dsonar.sources=client,server \
                               -Dsonar.exclusions='**/node_modules/**,**/dist/**'
