@@ -10,22 +10,23 @@ pipeline {
     }
 
     stages {
-
-        stage('Build Backend Image') {
+        stage('Build Backend') {
             steps {
                 sh 'docker build -t aadu949/mern-server:latest ./server'
             }
         }
 
-        stage('Build Frontend Image') {
+        stage('Build Frontend') {
             steps {
                 sh 'docker build -t aadu949/mern-client:latest ./client'
             }
         }
 
-        stage('Docker Hub Login') {
+        stage('Docker Login') {
             steps {
-                sh 'echo "$DOCKERHUB_CREDENTIALS_PSW" | docker login -u "$DOCKERHUB_CREDENTIALS_USR" --password-stdin'
+                sh '''
+                    echo "$DOCKERHUB_CREDENTIALS_PSW" | docker login -u "$DOCKERHUB_CREDENTIALS_USR" --password-stdin
+                '''
             }
         }
 
@@ -39,8 +40,8 @@ pipeline {
         stage('Deploy Backend') {
             steps {
                 sh '''
-                    docker pull aadu949/mern-server:latest
                     docker rm -f mern-server || true
+                    docker pull aadu949/mern-server:latest
                     docker run -d \
                       --name mern-server \
                       --env-file /home/ubuntu/MERN-project/server/.env \
@@ -54,8 +55,8 @@ pipeline {
         stage('Deploy Frontend') {
             steps {
                 sh '''
-                    docker pull aadu949/mern-client:latest
                     docker rm -f mern-client || true
+                    docker pull aadu949/mern-client:latest
                     docker run -d \
                       --name mern-client \
                       --restart unless-stopped \
@@ -65,13 +66,19 @@ pipeline {
             }
         }
 
-        stage('Verify Deployment') {
+        stage('Verify') {
             steps {
                 sh '''
                     sleep 5
                     docker ps
-                    curl -f http://localhost:5000
-                    curl -f http://localhost
+
+                    HOST_IP=$(ip route | awk '/default/ {print $3}')
+
+                    echo "Testing backend through Docker host: $HOST_IP"
+                    curl -f http://$HOST_IP:5000
+
+                    echo "Testing frontend through Docker host: $HOST_IP"
+                    curl -f http://$HOST_IP
                 '''
             }
         }
@@ -79,11 +86,11 @@ pipeline {
 
     post {
         success {
-            echo 'MERN application built, pushed and deployed successfully!'
+            echo 'MERN CI/CD deployment successful!'
         }
 
         failure {
-            echo 'Deployment failed. Check the console output.'
+            echo 'MERN deployment failed.'
         }
     }
 }
