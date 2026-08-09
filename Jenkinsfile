@@ -10,6 +10,33 @@ pipeline {
     }
 
     stages {
+
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'SonarScanner'
+
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                              -Dsonar.projectKey=mern-project \
+                              -Dsonar.projectName='MERN Project' \
+                              -Dsonar.sources=client,server \
+                              -Dsonar.exclusions='**/node_modules/**,**/dist/**'
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
         stage('Build Backend') {
             steps {
                 sh 'docker build -t aadu949/mern-server:latest ./server'
