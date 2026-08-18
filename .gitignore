@@ -147,3 +147,4 @@ vite.config.ts.timestamp-*
 .vite/
 >>>>>>> 7bf646c1d840567da9f96937ec564ee16136c3c6
 .scannerwork/
+terraform/.terraform/
