@@ -1,0 +1,51 @@
+{
+    "nodegroup": {
+        "nodegroupName": "mern-nodes",
+        "nodegroupArn": "arn:aws:eks:ap-south-1:926028310069:nodegroup/mern-cluster/mern-nodes/fed0057a-22e5-37f0-0cb7-185101c84878",
+        "clusterName": "mern-cluster",
+        "version": "1.34",
+        "releaseVersion": "1.34.9-20260810",
+        "createdAt": "2026-08-16T14:22:58.546000+00:00",
+        "modifiedAt": "2026-08-16T15:12:32.230000+00:00",
+        "status": "DELETING",
+        "capacityType": "ON_DEMAND",
+        "scalingConfig": {
+            "minSize": 1,
+            "maxSize": 2,
+            "desiredSize": 1
+        },
+        "instanceTypes": [
+            "t3.medium"
+        ],
+        "subnets": [
+            "subnet-0fc2f079aa9aa28dc",
+            "subnet-0d67d85f5656d6b8d",
+            "subnet-0258eceb28cff9ca1"
+        ],
+        "amiType": "AL2023_x86_64_STANDARD",
+        "nodeRole": "arn:aws:iam::926028310069:role/mern-eks-node-role",
+        "resources": {
+            "autoScalingGroups": [
+                {
+                    "name": "eks-mern-nodes-fed0057a-22e5-37f0-0cb7-185101c84878"
+                }
+            ]
+        },
+        "diskSize": 20,
+        "health": {
+            "issues": [
+                {
+                    "code": "AsgInstanceLaunchFailures",
+                    "message": "Could not launch On-Demand Instances. InvalidParameterCombination - The specified instance type is not eligible for Free Tier. For a list of Free Tier instance types, run 'describe-instance-types' with the filter 'free-tier-eligible=true'. Launching EC2 instance failed.",
+                    "resourceIds": [
+                        "eks-mern-nodes-fed0057a-22e5-37f0-0cb7-185101c84878"
+                    ]
+                }
+            ]
+        },
+        "updateConfig": {
+            "maxUnavailable": 1
+        },
+        "tags": {}
+    }
+}
