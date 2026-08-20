@@ -69,12 +69,7 @@ pipeline {
                 sh '''
                     docker rm -f mern-server || true
                     docker pull aadu949/mern-server:latest
-                    docker run -d \
-                      --name mern-server \
-                      --env-file /home/ubuntu/MERN-project/server/.env \
-                      --restart unless-stopped \
-                      -p 5000:5000 \
-                      aadu949/mern-server:latest
+                    docker run -d --name mern-server --network mern-network --env-file /home/ubuntu/MERN-project/server/.env --restart unless-stopped -p 5000:5000 aadu949/mern-server:latest
                 '''
             }
         }
@@ -84,11 +79,7 @@ pipeline {
                 sh '''
                     docker rm -f mern-client || true
                     docker pull aadu949/mern-client:latest
-                    docker run -d \
-                      --name mern-client \
-                      --restart unless-stopped \
-                      -p 80:80 \
-                      aadu949/mern-client:latest
+                    docker run -d --name mern-client --network mern-network --restart unless-stopped -p 80:80 aadu949/mern-client:latest
                 '''
             }
         }
