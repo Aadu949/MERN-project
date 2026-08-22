@@ -90,7 +90,7 @@ function App() {
   return (
     <div className="app">
       <div className="auth-card">
-        <h1>MERN-Application</h1>
+        <h1>MERN stck- devopsApplication</h1>
 
         <p className="subtitle">
           {isLogin
