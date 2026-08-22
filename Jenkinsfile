@@ -7,7 +7,6 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
-        GITHUB_CREDENTIALS = credentials('github-credentials')
     }
 
     stages {
@@ -85,14 +84,21 @@ pipeline {
             }
         }
 
-        stage('Push Kubernetes Changes') {
-            steps {
-                sh '''
-                    git push https://$GITHUB_CREDENTIALS_USR:$GITHUB_CREDENTIALS_PSW@github.com/Aadu949/MERN-project.git HEAD:main
-                '''
-            }
+	stage('Push Kubernetes Changes') {
+    		steps {
+        		withCredentials([
+            			usernamePassword(
+                			credentialsId: 'github-credentials',
+                			usernameVariable: 'GITHUB_USER',
+                			passwordVariable: 'GITHUB_TOKEN'
+            )
+        ]) {
+            sh '''
+                git push https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/Aadu949/MERN-project.git HEAD:main
+            '''
         }
-
+    }
+}
         stage('Verify') {
             steps {
                 sh '''
