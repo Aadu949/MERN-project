@@ -7,6 +7,7 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
+        GITHUB_CREDENTIALS = credentials('github-credentials')
     }
 
     stages {
@@ -39,47 +40,55 @@ pipeline {
 
         stage('Build Backend') {
             steps {
-                sh 'docker build -t aadu949/mern-server:latest ./server'
+                sh 'docker build -t aadu949/mern-server:${BUILD_NUMBER} ./server'
             }
         }
 
         stage('Build Frontend') {
             steps {
-                sh 'docker build -t aadu949/mern-client:latest ./client'
+                sh 'docker build -t aadu949/mern-client:${BUILD_NUMBER} ./client'
             }
         }
 
         stage('Docker Login') {
             steps {
                 sh '''
-                    echo "$DOCKERHUB_CREDENTIALS_PSW" | docker login -u "$DOCKERHUB_CREDENTIALS_USR" --password-stdin
+                    echo "$DOCKERHUB_CREDENTIALS_PSW" | docker login \
+                    -u "$DOCKERHUB_CREDENTIALS_USR" \
+                    --password-stdin
                 '''
             }
         }
 
         stage('Push Images') {
             steps {
-                sh 'docker push aadu949/mern-server:latest'
-                sh 'docker push aadu949/mern-client:latest'
-            }
-        }
-
-        stage('Deploy Backend') {
-            steps {
                 sh '''
-                    docker rm -f mern-server || true
-                    docker pull aadu949/mern-server:latest
-                    docker run -d --name mern-server --network mern-network --env-file /home/ubuntu/MERN-project/server/.env --restart unless-stopped -p 5000:5000 aadu949/mern-server:latest
+                    docker push aadu949/mern-server:${BUILD_NUMBER}
+                    docker push aadu949/mern-client:${BUILD_NUMBER}
                 '''
             }
         }
 
-        stage('Deploy Frontend') {
+        stage('Update Kubernetes Manifests') {
             steps {
                 sh '''
-                    docker rm -f mern-client || true
-                    docker pull aadu949/mern-client:latest
-                    docker run -d --name mern-client --network mern-network --restart unless-stopped -p 80:80 aadu949/mern-client:latest
+                    git config user.name "Jenkins"
+                    git config user.email "jenkins@localhost"
+
+                    sed -i "s|aadu949/mern-server:.*|aadu949/mern-server:${BUILD_NUMBER}|" k8s/backend.yaml
+                    sed -i "s|aadu949/mern-client:.*|aadu949/mern-client:${BUILD_NUMBER}|" k8s/frontend.yaml
+
+                    git add k8s/backend.yaml k8s/frontend.yaml
+
+                    git commit -m "Update images to build ${BUILD_NUMBER}" || true
+                '''
+            }
+        }
+
+        stage('Push Kubernetes Changes') {
+            steps {
+                sh '''
+                    git push https://$GITHUB_CREDENTIALS_USR:$GITHUB_CREDENTIALS_PSW@github.com/Aadu949/MERN-project.git HEAD:main
                 '''
             }
         }
@@ -87,16 +96,11 @@ pipeline {
         stage('Verify') {
             steps {
                 sh '''
-                    sleep 5
-                    docker ps
-
-                    HOST_IP=$(ip route | awk '/default/ {print $3}')
-
-                    echo "Testing backend through Docker host: $HOST_IP"
-                    curl -f http://$HOST_IP:5000
-
-                    echo "Testing frontend through Docker host: $HOST_IP"
-                    curl -f http://$HOST_IP
+                    echo "MERN CI/CD pipeline completed successfully."
+                    echo "Docker images:"
+                    echo "aadu949/mern-server:${BUILD_NUMBER}"
+                    echo "aadu949/mern-client:${BUILD_NUMBER}"
+                    echo "ArgoCD will sync the Kubernetes manifests from GitHub."
                 '''
             }
         }
@@ -104,11 +108,11 @@ pipeline {
 
     post {
         success {
-            echo 'MERN CI/CD deployment successful!'
+            echo 'MERN GitOps CI/CD deployment successful!'
         }
 
         failure {
-            echo 'MERN deployment failed.'
+            echo 'MERN GitOps deployment failed.'
         }
     }
 }
