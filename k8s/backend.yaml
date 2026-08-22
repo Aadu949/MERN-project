@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: aadu949/mern-server:36
+          image: aadu949/mern-server:37
           ports:
             - containerPort: 5000
           env:
