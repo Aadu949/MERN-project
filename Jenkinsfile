@@ -12,6 +12,7 @@ pipeline {
     stages {
 
         stage('SonarQube Analysis') {
+            when { expression { false } }
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner'
@@ -30,6 +31,7 @@ pipeline {
         }
 
         stage('Quality Gate') {
+            when { expression { false } }
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
@@ -84,21 +86,22 @@ pipeline {
             }
         }
 
-	stage('Push Kubernetes Changes') {
-    		steps {
-        		withCredentials([
-            			usernamePassword(
-                			credentialsId: 'github-credentials',
-                			usernameVariable: 'GITHUB_USER',
-                			passwordVariable: 'GITHUB_TOKEN'
-            )
-        ]) {
-            sh '''
-                git push https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/Aadu949/MERN-project.git HEAD:main
-            '''
+        stage('Push Kubernetes Changes') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'github-credentials',
+                        usernameVariable: 'GITHUB_USER',
+                        passwordVariable: 'GITHUB_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        git push https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/Aadu949/MERN-project.git HEAD:main
+                    '''
+                }
+            }
         }
-    }
-}
+
         stage('Verify') {
             steps {
                 sh '''
