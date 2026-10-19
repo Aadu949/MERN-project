@@ -10,35 +10,6 @@ pipeline {
     }
 
     stages {
-
-        stage('SonarQube Analysis') {
-            when { expression { false } }
-            steps {
-                script {
-                    def scannerHome = tool 'SonarScanner'
-
-                    withSonarQubeEnv('SonarQube') {
-                        sh """
-                            ${scannerHome}/bin/sonar-scanner \
-                              -Dsonar.projectKey=MERN-project \
-                              -Dsonar.projectName='MERN Project' \
-                              -Dsonar.sources=client,server \
-                              -Dsonar.exclusions='**/node_modules/**,**/dist/**'
-                        """
-                    }
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            when { expression { false } }
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
-
         stage('Build Backend') {
             steps {
                 sh 'docker build -t aadu949/mern-server:${BUILD_NUMBER} ./server'
@@ -55,8 +26,8 @@ pipeline {
             steps {
                 sh '''
                     echo "$DOCKERHUB_CREDENTIALS_PSW" | docker login \
-                    -u "$DOCKERHUB_CREDENTIALS_USR" \
-                    --password-stdin
+                        -u "$DOCKERHUB_CREDENTIALS_USR" \
+                        --password-stdin
                 '''
             }
         }
@@ -70,46 +41,13 @@ pipeline {
             }
         }
 
-        stage('Update Kubernetes Manifests') {
-            steps {
-                sh '''
-                    git config user.name "Jenkins"
-                    git config user.email "jenkins@localhost"
-
-                    sed -i "s|aadu949/mern-server:.*|aadu949/mern-server:${BUILD_NUMBER}|" k8s/backend.yaml
-                    sed -i "s|aadu949/mern-client:.*|aadu949/mern-client:${BUILD_NUMBER}|" k8s/frontend.yaml
-
-                    git add k8s/backend.yaml k8s/frontend.yaml
-
-                    git commit -m "Update images to build ${BUILD_NUMBER}" || true
-                '''
-            }
-        }
-
-        stage('Push Kubernetes Changes') {
-            steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'github-credentials',
-                        usernameVariable: 'GITHUB_USER',
-                        passwordVariable: 'GITHUB_TOKEN'
-                    )
-                ]) {
-                    sh '''
-                        git push https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/Aadu949/MERN-project.git HEAD:main
-                    '''
-                }
-            }
-        }
-
         stage('Verify') {
             steps {
                 sh '''
-                    echo "MERN CI/CD pipeline completed successfully."
-                    echo "Docker images:"
-                    echo "aadu949/mern-server:${BUILD_NUMBER}"
-                    echo "aadu949/mern-client:${BUILD_NUMBER}"
-                    echo "ArgoCD will sync the Kubernetes manifests from GitHub."
+                    echo "MERN CI pipeline completed successfully."
+                    echo "Backend image: aadu949/mern-server:${BUILD_NUMBER}"
+                    echo "Frontend image: aadu949/mern-client:${BUILD_NUMBER}"
+                    echo "Images pushed to Docker Hub."
                 '''
             }
         }
@@ -117,11 +55,11 @@ pipeline {
 
     post {
         success {
-            echo 'MERN GitOps CI/CD deployment successful!'
+            echo 'MERN CI pipeline succeeded!'
         }
 
         failure {
-            echo 'MERN GitOps deployment failed.'
+            echo 'MERN CI pipeline failed. Check the console output.'
         }
     }
 }
