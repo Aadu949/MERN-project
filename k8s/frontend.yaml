@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: aadu949/mern-client:28
+          image: aadu949/mern-client:29
           imagePullPolicy: Always
           ports:
             - containerPort: 80
