@@ -50,9 +50,9 @@ pipeline {
                         -v /home/ubuntu/MERN-project:/project:ro \\
                         -w /project \\
                         docker:cli sh -c '
-                            docker compose pull &&
-                            docker compose up -d &&
-                            docker compose ps
+                            docker compose -p mern-project pull &&
+                            docker compose -p mern-project up -d &&
+                            docker compose -p mern-project ps
                         '
                 '''
             }
