@@ -41,6 +41,23 @@ pipeline {
             }
         }
 
+        stage('Deploy') {
+            steps {
+                sh '''
+                    docker run --rm \\
+                        -e IMAGE_TAG="${BUILD_NUMBER}" \\
+                        -v /var/run/docker.sock:/var/run/docker.sock \\
+                        -v /home/ubuntu/MERN-project:/project:ro \\
+                        -w /project \\
+                        docker:cli sh -c '
+                            docker compose pull &&
+                            docker compose up -d &&
+                            docker compose ps
+                        '
+                '''
+            }
+        }
+
         stage('Verify') {
             steps {
                 sh '''
