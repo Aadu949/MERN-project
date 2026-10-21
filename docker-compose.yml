@@ -1,8 +1,6 @@
-
 services:
   mern-backend:
-    build:
-      context: ./server
+    image: aadu949/mern-server:${IMAGE_TAG:-30}
     container_name: mern-backend
     restart: unless-stopped
     environment:
@@ -12,8 +10,7 @@ services:
       - "5000:5000"
 
   mern-frontend:
-    build:
-      context: ./client
+    image: aadu949/mern-client:${IMAGE_TAG:-30}
     container_name: mern-frontend
     restart: unless-stopped
     ports:
