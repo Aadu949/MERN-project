@@ -25,11 +25,10 @@ pipeline {
             steps {
                 script {
                     timeout(time: 5, unit: 'MINUTES') {
-                        def taskId = readFile('.scannerwork/report-task.txt')
+                        def taskLine = readFile('.scannerwork/report-task.txt')
                             .readLines()
                             .find { it.startsWith('ceTaskId=') }
-                            ?.split('=', 2)
-                            ?.getAt(1)
+                        def taskId = taskLine ? taskLine.substring('ceTaskId='.length()) : null
 
                         if (!taskId) {
                             error('SonarQube task ID not found.')
