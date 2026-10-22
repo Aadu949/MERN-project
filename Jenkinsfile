@@ -47,13 +47,21 @@ pipeline {
                                         ''',
                                         returnStdout: true
                                     ).trim()
-                                    def task = new groovy.json.JsonSlurperClassic().parseText(response).task
-                                    echo "SonarQube analysis status: ${task.status}"
-                                    if (task.status in ['FAILED', 'CANCELED']) {
-                                        error("SonarQube analysis ${task.status}")
+                                    writeFile file: 'sonar-task-response.json', text: response
+                                    def taskStatus = sh(
+                                        script: "python3 -c \"import json; print(json.load(open('sonar-task-response.json'))['task']['status'])\"",
+                                        returnStdout: true
+                                    ).trim()
+                                    def analysisIdValue = sh(
+                                        script: "python3 -c \"import json; print(json.load(open('sonar-task-response.json'))['task'].get('analysisId', ''))\"",
+                                        returnStdout: true
+                                    ).trim()
+                                    echo "SonarQube analysis status: ${taskStatus}"
+                                    if (taskStatus in ['FAILED', 'CANCELED']) {
+                                        error("SonarQube analysis ${taskStatus}")
                                     }
-                                    if (task.status == 'SUCCESS') {
-                                        analysisId = task.analysisId ?: ''
+                                    if (taskStatus == 'SUCCESS') {
+                                        analysisId = analysisIdValue
                                         if (!analysisId) {
                                             error('SonarQube analysis ID not found.')
                                         }
@@ -69,7 +77,11 @@ pipeline {
                                         ''',
                                         returnStdout: true
                                     ).trim()
-                                    def gateStatus = new groovy.json.JsonSlurperClassic().parseText(gateResponse).projectStatus.status
+                                    writeFile file: 'sonar-gate-response.json', text: gateResponse
+                                    def gateStatus = sh(
+                                        script: "python3 -c \"import json; print(json.load(open('sonar-gate-response.json'))['projectStatus']['status'])\"",
+                                        returnStdout: true
+                                    ).trim()
                                     echo "SonarQube Quality Gate: ${gateStatus}"
                                     if (gateStatus != 'OK') {
                                         error("Quality Gate failed: ${gateStatus}")
