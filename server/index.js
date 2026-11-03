@@ -1,15 +1,80 @@
+
 require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const promClient = require("@prometheus-io/client");
 const User = require("./models/User");
 
 const app = express();
 
+// Prometheus Registry
+const register = new promClient.Registry();
+
+promClient.collectDefaultMetrics({
+  register,
+});
+
+// HTTP Request Counter
+const httpRequestsTotal = new promClient.Counter({
+  name: "http_requests_total",
+  help: "Total number of HTTP requests",
+  labelNames: ["method", "route", "status_code"],
+  registers: [register],
+});
+
+// HTTP Request Duration Histogram
+const httpRequestDuration = new promClient.Histogram({
+  name: "http_request_duration_seconds",
+  help: "HTTP request duration in seconds",
+  labelNames: ["method", "route", "status_code"],
+  registers: [register],
+  buckets: [0.1, 0.5, 1, 2, 5],
+});
+
 app.use(cors());
 app.use(express.json());
+
+// Prometheus HTTP Monitoring Middleware
+app.use((req, res, next) => {
+  if (req.path === "/metrics") {
+    return next();
+  }
+
+  const startTime = Date.now();
+
+  res.on("finish", () => {
+    const route = req.route
+      ? req.baseUrl + req.route.path
+      : "unmatched";
+
+    const labels = {
+      method: req.method,
+      route,
+      status_code: String(res.statusCode),
+    };
+
+    httpRequestsTotal.inc(labels);
+
+    const duration = (Date.now() - startTime) / 1000;
+    httpRequestDuration.observe(labels, duration);
+  });
+
+  next();
+});
+
+// Prometheus Metrics Endpoint
+app.get("/metrics", async (req, res) => {
+  try {
+    res.set("Content-Type", register.contentType);
+    res.end(await register.metrics());
+  } catch (error) {
+    console.error("Prometheus Metrics Error:", error.message);
+    res.status(500).send("Unable to collect metrics");
+  }
+});
 
 // Test route
 app.get("/", (req, res) => {
@@ -68,14 +133,12 @@ app.post("/api/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Check required fields
     if (!name || !email || !password) {
       return res.status(400).json({
         message: "Name, email and password are required",
       });
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
@@ -84,10 +147,8 @@ app.post("/api/register", async (req, res) => {
       });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
     const user = await User.create({
       name,
       email,
@@ -111,7 +172,7 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-// MongoDB connection
+// MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
