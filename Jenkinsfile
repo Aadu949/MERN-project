@@ -10,6 +10,18 @@ pipeline {
     }
 
     stages {
+        stage('Backend Tests') {
+            steps {
+                sh '''
+                    docker run --rm \
+                        -v jenkins_home:/var/jenkins_home \
+                        -w "$WORKSPACE/server" \
+                        node:22-alpine \
+                        sh -c 'npm ci && npm test'
+                '''
+            }
+        }
+
         stage('SonarQube Analysis') {
             steps {
                 script {
