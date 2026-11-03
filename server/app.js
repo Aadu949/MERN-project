@@ -1,10 +1,10 @@
 const express = require("express");
-const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const promClient = require("@prometheus-io/client");
 const User = require("./models/User");
 
 const app = express();
+app.disable("x-powered-by");
 
 const register = new promClient.Registry();
 
@@ -25,7 +25,6 @@ const httpRequestDuration = new promClient.Histogram({
   buckets: [0.1, 0.5, 1, 2, 5],
 });
 
-app.use(cors());
 app.use(express.json());
 
 app.use((req, res, next) => {
